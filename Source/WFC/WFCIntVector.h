@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include <string>
 
 /**
  *
@@ -17,8 +18,10 @@ public:
 	WFCIntVector(int xx = 0, int yy = 0, int zz = 0);
 	void Reverse();
 
-	int GetDistance(const WFCIntVector& b);
-	double GetDistanceD(const WFCIntVector& b);
+	std::string GetHash() const;
+
+	int GetDistance(const WFCIntVector& b) const;
+	double GetDistanceD(const WFCIntVector& b) const;
 
 	bool operator==(const WFCIntVector& b)
 	{
@@ -52,5 +55,5 @@ public:
 		return ivec;
 	}
 
-	int GetVolume();
+	int GetVolume() const;
 };

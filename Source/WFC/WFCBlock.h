@@ -16,6 +16,8 @@ public:
 	// Sets default values for this actor's properties
 	AWFCBlock();
 
+	UPROPERTY(EditDefaultsOnly, Category = "Block")
+	bool CanOverlap;
 
 	WFCIntVector GridPos;
 protected:

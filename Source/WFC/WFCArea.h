@@ -11,7 +11,11 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 //#include "GameFramework/Pawn.h"
+#include "WFCGrid.h"
+#include <unordered_map>
+
 #include "WFCArea.generated.h"
+
 
 
 UCLASS()
@@ -28,6 +32,11 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category=Block)
 	TSubclassOf<class AWFCBlock> BlockClass2;
+
+
+	//player相对位置上是否可以重叠block
+	UFUNCTION(BlueprintCallable)
+	bool CanOverlap(int x,int y,int z);
 
 protected:
 	// Called when the game starts or when spawned
@@ -75,10 +84,12 @@ public:
 	//清除在观测范围外的blocks
 	void RemoveOutBlocks();
 
-	//新增需要的blocks位置到队列中 
-	void AddNewBlockPos();
+	//新增需要的Grid位置到队列中 
+	void AddNewGridPos();
 	//真正的构造
 	void AddBlockToScene();
+
+
 
 
 	//玩家Grid位置
@@ -89,9 +100,12 @@ public:
 	TArray<WFCIntVector> LightedBlocksGridPos;
 
 	//已经在场景中的Block
-	TArray<TWeakObjectPtr<AWFCBlock> > AllBlock;
+//	TArray<TWeakObjectPtr<WFCGrid> > AllBlock;
+	
+	std::unordered_map<std::string, GridPtr> AllBlockGrid;
 
 	std::list<WFCIntVector> NeedToBlockGridPos;
 
 	void GenerateBlockAtPos(const WFCIntVector& Pos);
+	void AddBlockAtPos(AWFCBlock* Block, const WFCIntVector& Pos);
 };

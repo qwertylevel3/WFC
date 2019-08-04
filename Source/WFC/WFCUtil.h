@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 
+#include <string>
+
 /**
  * 
  */
@@ -14,4 +16,5 @@ public:
 	~WFCUtil();
 
 	static int getRandom(int a, int b);
+	static std::string hashPos(int x, int y, int z);
 };
