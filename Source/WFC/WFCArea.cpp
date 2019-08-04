@@ -4,6 +4,7 @@
 
 #include "WFCUtil.h"
 #include <DrawDebugHelpers.h>
+#include <string>
 
 // Sets default values
 AWFCArea::AWFCArea()
@@ -17,7 +18,7 @@ AWFCArea::AWFCArea()
 	PlayerPos.y = 0;
 	PlayerPos.z = 0;
 
-	LightSize = 5;
+	LightSize = 10;
 }
 
 // Called when the game starts or when spawned
@@ -31,13 +32,8 @@ void AWFCArea::BeginPlay()
 void AWFCArea::initArea()
 {
 	UpdateLightedBlocksGridPos();
-	for (int i = 0; i < LightedBlocksGridPos.Num(); i++)
-	{
-		if (BlockClass1 != NULL && BlockClass2 != NULL)
-		{
-			GenerateBlockAtPos(LightedBlocksGridPos[i]);
-		}
-	}
+	//	RemoveOutBlocks();
+	AddNewBlockPos();
 }
 
 void AWFCArea::MoveToDirection(WFCIntVector Direction)
@@ -48,7 +44,7 @@ void AWFCArea::MoveToDirection(WFCIntVector Direction)
 
 	UpdateLightedBlocksGridPos();
 	RemoveOutBlocks();
-	AddNewBlocks();
+	AddNewBlockPos();
 
 	//
 	//
@@ -146,6 +142,11 @@ int AWFCArea::GetReletiveIndex(int Index, int PlayerIndex, int Length)
 void AWFCArea::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	for (int i = 0; i < 5; i++)
+	{
+		AddBlockToScene();
+	}
 }
 
 void AWFCArea::UpdateLightedBlocksGridPos()
@@ -172,8 +173,9 @@ void AWFCArea::UpdateLightedBlocksGridPos()
 
 void AWFCArea::RemoveOutBlocks()
 {
+	//移除场景中的block
 	TArray<TWeakObjectPtr<AWFCBlock> > TempArray;
-	NeedToBlockGridPos.Empty();
+	//NeedToBlockGridPos.Empty();
 	for (int i = 0; i < AllBlock.Num(); i++)
 	{
 		bool SearchFlag = false;
@@ -204,13 +206,41 @@ void AWFCArea::RemoveOutBlocks()
 	{
 		AllBlock.Emplace(TempArray[i]);
 	}
+
+	//移除待生成block，防止生成无效的block
+	auto iter = NeedToBlockGridPos.begin();
+	while (iter != NeedToBlockGridPos.end())
+	{
+		bool SearchFlag = false;
+		for (int j = 0; j < LightedBlocksGridPos.Num(); j++)
+		{
+			WFCIntVector BlockGridPos = *iter;
+			WFCIntVector LightGridPos = LightedBlocksGridPos[j];
+
+			if (BlockGridPos == LightGridPos)
+			{
+				SearchFlag = true;
+				break;
+			}
+		}
+
+		if (!SearchFlag)
+		{
+			iter = NeedToBlockGridPos.erase(iter);
+		}
+		else
+		{
+			iter++;
+		}
+	}
 }
 
-void AWFCArea::AddNewBlocks()
+void AWFCArea::AddNewBlockPos()
 {
 	for (int i = 0; i < LightedBlocksGridPos.Num(); i++)
 	{
 		bool SearchFlag = false;
+		//搜索场景中是否存在
 		for (int j = 0; j < AllBlock.Num(); j++)
 		{
 			WFCIntVector LightGridPos = LightedBlocksGridPos[i];
@@ -223,15 +253,51 @@ void AWFCArea::AddNewBlocks()
 			}
 		}
 
+		//搜索是否已经加入了待生成block队列
+		auto iter = NeedToBlockGridPos.begin();
+		while (iter!=NeedToBlockGridPos.end())
+		{
+			WFCIntVector LightGridPos = LightedBlocksGridPos[i];
+			WFCIntVector BlockGridPos = *iter;
+
+			if (BlockGridPos == LightGridPos)
+			{
+				SearchFlag = true;
+				break;
+			}
+			iter++;
+		}
+
 		if (!SearchFlag)
 		{
-			NeedToBlockGridPos.Emplace(LightedBlocksGridPos[i]);
+			NeedToBlockGridPos.push_back(LightedBlocksGridPos[i]);
 		}
 	}
-	for (int i = 0; i < NeedToBlockGridPos.Num(); i++)
+}
+
+void AWFCArea::AddBlockToScene()
+{
+	if (NeedToBlockGridPos.empty())
 	{
-		GenerateBlockAtPos(NeedToBlockGridPos[i]);
+		return;
 	}
+
+//	if (GEngine) {
+//		GEngine->AddOnScreenDebugMessage(-1, 20, FColor::Red, std::to_string(NeedToBlockGridPos.size()).c_str());
+//	}
+
+	auto minIter = NeedToBlockGridPos.begin();
+	auto iter = NeedToBlockGridPos.begin();
+	while (iter != NeedToBlockGridPos.end())
+	{
+		if (iter != minIter && iter->GetDistanceD(PlayerPos) < minIter->GetDistanceD(PlayerPos))
+		{
+			minIter = iter;
+		}
+		iter++;
+	}
+	GenerateBlockAtPos(*minIter);
+	NeedToBlockGridPos.erase(minIter);
 }
 
 void AWFCArea::GenerateBlockAtPos(const WFCIntVector& Pos)

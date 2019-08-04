@@ -22,6 +22,14 @@ int WFCIntVector::GetDistance(const WFCIntVector& b)
 	return sqrt(deltaX*deltaX + deltaY * deltaY + deltaZ * deltaZ);
 }
 
+double WFCIntVector::GetDistanceD(const WFCIntVector& b)
+{
+	double  deltaX = b.x - this->x;
+	double  deltaY = b.y - this->y;
+	double  deltaZ = b.z - this->z;
+	return sqrt(deltaX*deltaX + deltaY * deltaY + deltaZ * deltaZ);
+}
+
 int WFCIntVector::GetVolume()
 {
 	return x * y*z;

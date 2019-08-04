@@ -5,6 +5,7 @@
 
 #include <vector>
 
+#include <list>
 #include "WFCIntVector.h"
 #include "WFCBlock.h"
 #include "CoreMinimal.h"
@@ -74,8 +75,11 @@ public:
 	//清除在观测范围外的blocks
 	void RemoveOutBlocks();
 
-	//新增需要的blocks
-	void AddNewBlocks();
+	//新增需要的blocks位置到队列中 
+	void AddNewBlockPos();
+	//真正的构造
+	void AddBlockToScene();
+
 
 	//玩家Grid位置
 	WFCIntVector PlayerPos;
@@ -87,8 +91,7 @@ public:
 	//已经在场景中的Block
 	TArray<TWeakObjectPtr<AWFCBlock> > AllBlock;
 
-	TArray<WFCIntVector> NeedToBlockGridPos;
-
+	std::list<WFCIntVector> NeedToBlockGridPos;
 
 	void GenerateBlockAtPos(const WFCIntVector& Pos);
 };
