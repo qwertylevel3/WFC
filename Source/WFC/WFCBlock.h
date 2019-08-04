@@ -24,6 +24,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Block")
 	bool CanStep;
 
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Block")
 	FWFCIntVector GridPos;
 protected:
 	// Called when the game starts or when spawned

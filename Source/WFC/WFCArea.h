@@ -18,6 +18,15 @@
 
 
 
+UENUM(BlueprintType)
+enum class EWFCOrientation : uint8
+{
+	E_UP   UMETA(DisplayName = "Up"),
+	E_DOWN   UMETA(DisplayName = "Down"),
+	E_LEFT   UMETA(DisplayName = "Left"),
+	E_RIGHT   UMETA(DisplayName = "Right")
+};
+
 UCLASS()
 class WFC_API AWFCArea : public AActor
 {
@@ -43,6 +52,9 @@ public:
 	//获取可移动到的最终位置(可能落下,跳跃),-1-1-1表示不可到达
 	UFUNCTION(BlueprintCallable)
 	FWFCIntVector GetMovealbePos(const FWFCIntVector& TargetPos);
+
+
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
