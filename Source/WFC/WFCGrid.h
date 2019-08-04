@@ -19,15 +19,18 @@ class WFC_API WFCGrid
 public:
 	WFCGrid();
 	~WFCGrid();
-	WFCGrid(const WFCIntVector& Pos);
+	WFCGrid(const FWFCIntVector& Pos);
 
 	void AddBlock(AWFCBlock* Block);
 
 	std::string GetHash();
 
 	bool CanOverlap();
+	bool CanStep();
 
-	WFCIntVector GridPos;
+	void ClearBlocks();
+
+	FWFCIntVector GridPos;
 protected:
 	std::list<AWFCBlock*> AllBlock;
 };

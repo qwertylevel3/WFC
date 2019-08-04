@@ -18,13 +18,13 @@ AWFCArea::AWFCArea()
 	PlayerPos.y = 0;
 	PlayerPos.z = 0;
 
-	LightSize = 10;
+	LightSize = 1;
 }
 
 bool AWFCArea::CanOverlap(int x, int y, int z)
 {
-	WFCIntVector ivec(x, y, z);
-	if (AllBlockGrid.count(ivec.GetHash())>0)
+	FWFCIntVector ivec(x, y, z);
+	if (AllBlockGrid.count(ivec.GetHash()) > 0)
 	{
 		return AllBlockGrid[ivec.GetHash()]->CanOverlap();
 	}
@@ -32,6 +32,41 @@ bool AWFCArea::CanOverlap(int x, int y, int z)
 	{
 		return true;
 	}
+}
+
+FWFCIntVector AWFCArea::GetMovealbePos(const FWFCIntVector& TargetPos)
+{
+	std::string HashCode = TargetPos.GetHash();
+	if (AllBlockGrid.count(HashCode) > 0 && !AllBlockGrid[HashCode]->CanOverlap())
+	{
+		//被阻挡
+		return FWFCIntVector(-1, -1, -1);
+	}
+	else
+	{
+		//向下查找
+		for (int i = -1; i > -LightSize; i--)
+		{
+			FWFCIntVector TempVec = TargetPos;
+			TempVec.z = TempVec.z + i;
+			std::string TempHashCode = TempVec.GetHash();
+
+			if (AllBlockGrid.count(TempHashCode) > 0)
+			{
+				if (AllBlockGrid[TempHashCode]->CanStep())
+				{
+					//下方的block可以立足
+					return FWFCIntVector(TempVec.x, TempVec.y, TempVec.z + 1);
+				}
+				else if (!AllBlockGrid[TempHashCode]->CanStep())
+				{
+					//下方的block不能立足
+					return FWFCIntVector(-1, -1, -1);
+				}
+			}
+		}
+	}
+	return FWFCIntVector(-1, -1, -1);
 }
 
 // Called when the game starts or when spawned
@@ -48,7 +83,7 @@ void AWFCArea::initArea()
 	AddNewGridPos();
 }
 
-void AWFCArea::MoveToDirection(WFCIntVector Direction)
+void AWFCArea::MoveToDirection(FWFCIntVector Direction)
 {
 	PlayerPos = PlayerPos + Direction;
 
@@ -72,32 +107,32 @@ void AWFCArea::MoveToDirection(WFCIntVector Direction)
 
 void AWFCArea::MoveForward()
 {
-	MoveToDirection(WFCIntVector(-1, 0, 0));
+	MoveToDirection(FWFCIntVector(-1, 0, 0));
 }
 
 void AWFCArea::MoveBack()
 {
-	MoveToDirection(WFCIntVector(1, 0, 0));
+	MoveToDirection(FWFCIntVector(1, 0, 0));
 }
 
 void AWFCArea::MoveRight()
 {
-	MoveToDirection(WFCIntVector(0, -1, 0));
+	MoveToDirection(FWFCIntVector(0, -1, 0));
 }
 
 void AWFCArea::MoveLeft()
 {
-	MoveToDirection(WFCIntVector(0, 1, 0));
+	MoveToDirection(FWFCIntVector(0, 1, 0));
 }
 
 void AWFCArea::MoveUp()
 {
-	MoveToDirection(WFCIntVector(0, 0, 1));
+	MoveToDirection(FWFCIntVector(0, 0, 1));
 }
 
 void AWFCArea::MoveDown()
 {
-	MoveToDirection(WFCIntVector(0, 0, -1));
+	MoveToDirection(FWFCIntVector(0, 0, -1));
 }
 
 //TWeakObjectPtr<AWFCBlock> AWFCArea::GetBlock(int x, int y, int z)
@@ -171,7 +206,7 @@ void AWFCArea::UpdateLightedBlocksGridPos()
 		{
 			for (int k = -LightSize; k <= LightSize; k++)
 			{
-				WFCIntVector Pos(PlayerPos.x + i, PlayerPos.y + j, PlayerPos.z + k);
+				FWFCIntVector Pos(PlayerPos.x + i, PlayerPos.y + j, PlayerPos.z + k);
 
 				if (PlayerPos.GetDistance(Pos) <= LightSize
 					&& k < 0)
@@ -195,8 +230,8 @@ void AWFCArea::RemoveOutBlocks()
 		bool SearchFlag = false;
 		for (int j = 0; j < LightedBlocksGridPos.Num(); j++)
 		{
-			WFCIntVector BlockGridPos = BlocksIter->second->GridPos;
-			WFCIntVector LightGridPos = LightedBlocksGridPos[j];
+			FWFCIntVector BlockGridPos = BlocksIter->second->GridPos;
+			FWFCIntVector LightGridPos = LightedBlocksGridPos[j];
 
 			if (BlockGridPos == LightGridPos)
 			{
@@ -209,14 +244,14 @@ void AWFCArea::RemoveOutBlocks()
 		{
 			//			AllBlock[i]->SetActorHiddenInGame(true);
 //			AllBlock[i]->Destroy();
-			BlocksIter=AllBlockGrid.erase(BlocksIter);
+			BlocksIter->second->ClearBlocks();
+			BlocksIter = AllBlockGrid.erase(BlocksIter);
 		}
 		else
 		{
 			BlocksIter++;
 		}
 	}
-
 
 	//移除待生成block，防止生成无效的block
 	auto iter = NeedToBlockGridPos.begin();
@@ -225,8 +260,8 @@ void AWFCArea::RemoveOutBlocks()
 		bool SearchFlag = false;
 		for (int j = 0; j < LightedBlocksGridPos.Num(); j++)
 		{
-			WFCIntVector BlockGridPos = *iter;
-			WFCIntVector LightGridPos = LightedBlocksGridPos[j];
+			FWFCIntVector BlockGridPos = *iter;
+			FWFCIntVector LightGridPos = LightedBlocksGridPos[j];
 
 			if (BlockGridPos == LightGridPos)
 			{
@@ -236,7 +271,9 @@ void AWFCArea::RemoveOutBlocks()
 		}
 
 		if (!SearchFlag)
+
 		{
+			
 			iter = NeedToBlockGridPos.erase(iter);
 		}
 		else
@@ -253,7 +290,7 @@ void AWFCArea::AddNewGridPos()
 		bool SearchFlag = false;
 
 		//搜索场景中是否存在
-		if (AllBlockGrid.count(LightedBlocksGridPos[i].GetHash())>0)
+		if (AllBlockGrid.count(LightedBlocksGridPos[i].GetHash()) > 0)
 		{
 			SearchFlag = true;
 		}
@@ -262,8 +299,8 @@ void AWFCArea::AddNewGridPos()
 		auto iter = NeedToBlockGridPos.begin();
 		while (iter != NeedToBlockGridPos.end())
 		{
-			WFCIntVector LightGridPos = LightedBlocksGridPos[i];
-			WFCIntVector BlockGridPos = *iter;
+			FWFCIntVector LightGridPos = LightedBlocksGridPos[i];
+			FWFCIntVector BlockGridPos = *iter;
 
 			if (BlockGridPos == LightGridPos)
 			{
@@ -305,27 +342,34 @@ void AWFCArea::AddBlockToScene()
 	NeedToBlockGridPos.erase(minIter);
 }
 
-void AWFCArea::GenerateBlockAtPos(const WFCIntVector& Pos)
+void AWFCArea::GenerateBlockAtPos(const FWFCIntVector& Pos)
 {
 	UWorld* const World = GetWorld();
 	if (World != NULL)
 	{
 		AWFCBlock* block;
 		int rand = WFCUtil::getRandom(0, 1);
+
+		FActorSpawnParameters ActorSpawnParams;
+		ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
 		if (rand == 0)
 		{
-			block = World->SpawnActor<AWFCBlock>(BlockClass1, FVector(0, 0, 0), FRotator(0, 0, 0));
+			block = World->SpawnActor<AWFCBlock>(BlockClass1, FVector(0, 0, 0), FRotator(0, 0, 0),ActorSpawnParams);
 		}
 		else
 		{
-			block = World->SpawnActor<AWFCBlock>(BlockClass2, FVector(0, 0, 0), FRotator(0, 0, 0));
+			block = World->SpawnActor<AWFCBlock>(BlockClass2, FVector(0, 0, 0), FRotator(0, 0, 0),ActorSpawnParams);
 		}
 
-		AddBlockAtPos(block, Pos);
+		if (block)
+		{
+			AddBlockAtPos(block, Pos);
+		}
 	}
 }
 
-void AWFCArea::AddBlockAtPos(AWFCBlock* Block, const WFCIntVector& Pos)
+void AWFCArea::AddBlockAtPos(AWFCBlock* Block, const FWFCIntVector& Pos)
 {
 	Block->SetActorLocation(FVector(Pos.x*GridSize, Pos.y*GridSize, Pos.z*GridSize));
 	Block->GridPos = Pos;

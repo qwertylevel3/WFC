@@ -38,6 +38,11 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool CanOverlap(int x,int y,int z);
 
+
+
+	//获取可移动到的最终位置(可能落下,跳跃),-1-1-1表示不可到达
+	UFUNCTION(BlueprintCallable)
+	FWFCIntVector GetMovealbePos(const FWFCIntVector& TargetPos);
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -46,7 +51,7 @@ protected:
 public:	
 
 
-	void MoveToDirection(WFCIntVector Direction);
+	void MoveToDirection(FWFCIntVector Direction);
 
 	UFUNCTION(BlueprintCallable)
 	void MoveForward();
@@ -93,19 +98,19 @@ public:
 
 
 	//玩家Grid位置
-	WFCIntVector PlayerPos;
+	FWFCIntVector PlayerPos;
 	//可观测半径
 	int LightSize;
 
-	TArray<WFCIntVector> LightedBlocksGridPos;
+	TArray<FWFCIntVector> LightedBlocksGridPos;
 
 	//已经在场景中的Block
 //	TArray<TWeakObjectPtr<WFCGrid> > AllBlock;
 	
 	std::unordered_map<std::string, GridPtr> AllBlockGrid;
 
-	std::list<WFCIntVector> NeedToBlockGridPos;
+	std::list<FWFCIntVector> NeedToBlockGridPos;
 
-	void GenerateBlockAtPos(const WFCIntVector& Pos);
-	void AddBlockAtPos(AWFCBlock* Block, const WFCIntVector& Pos);
+	void GenerateBlockAtPos(const FWFCIntVector& Pos);
+	void AddBlockAtPos(AWFCBlock* Block, const FWFCIntVector& Pos);
 };
