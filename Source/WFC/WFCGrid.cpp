@@ -10,7 +10,7 @@ WFCGrid::WFCGrid()
 WFCGrid::WFCGrid(const FWFCIntVector& Pos)
 	:GridPos(Pos)
 {
-	LightValue = 3;
+	LightValue = 0;
 }
 
 WFCGrid::~WFCGrid()
@@ -20,6 +20,20 @@ WFCGrid::~WFCGrid()
 void WFCGrid::AddBlock(AWFCBlock* Block)
 {
 	AllBlock.push_back(Block);
+}
+
+void WFCGrid::RemoveBlock(AWFCBlock* Block)
+{
+	auto iter = AllBlock.begin();
+	while (iter!=AllBlock.end())
+	{
+		if ((*iter)==Block)
+		{
+			iter=AllBlock.erase(iter);
+			return;
+		}
+		iter++;
+	}
 }
 
 std::string WFCGrid::GetHash()
@@ -57,44 +71,17 @@ bool WFCGrid::CanStep()
 	return false;
 }
 
+void WFCGrid::CheckLight()
+{
+	LightValue--;
+}
+
 void WFCGrid::ClearBlocks()
 {
 	auto iter = AllBlock.begin();
 	while (iter != AllBlock.end())
 	{
 		(*iter)->Destroy();
-		iter++;
-	}
-}
-
-void WFCGrid::StartTurn()
-{
-	auto iter = AllBlock.begin();
-	while (iter != AllBlock.end())
-	{
-		(*iter)->StartTurn();
-		iter++;
-	}
-}
-
-void WFCGrid::ActionTurn()
-{
-	auto iter = AllBlock.begin();
-	while (iter != AllBlock.end())
-	{
-		(*iter)->ActionTurn();
-		iter++;
-	}
-
-
-}
-
-void WFCGrid::EndTurn()
-{
-	auto iter = AllBlock.begin();
-	while (iter != AllBlock.end())
-	{
-		(*iter)->EndTurn();
 		iter++;
 	}
 }

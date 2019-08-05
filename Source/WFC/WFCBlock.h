@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "WFCIntVector.h"
 #include "GameFramework/Pawn.h"
+#include "WFCOrientation.h"
 //#include "GameFramework/Actor.h"
 #include "WFCBlock.generated.h"
 
@@ -26,8 +27,11 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Block")
 	bool CanStep;
 
-	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Block")
+	UPROPERTY(EditAnywhere,BlueprintReadOnly, Category = "Block")
 	FWFCIntVector GridPos;
+
+	UFUNCTION(BlueprintNativeEvent)
+	void MoveAnimation(const FWFCIntVector& OriPos,const FWFCIntVector& TargetPos);
 
 	AWFCPlayZone* PlayZone;
 

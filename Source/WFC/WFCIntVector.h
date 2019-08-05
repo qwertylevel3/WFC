@@ -35,6 +35,10 @@ public:
 	{
 		return (this->x == b.x) && (this->y == b.y) && (this->z == b.z);
 	}
+	bool operator!=(const FWFCIntVector& b)
+	{
+		return (this->x != b.x) || (this->y != b.y) || (this->z != b.z);
+	}
 
 	//¿½±´¹¹Ôìº¯Êý
 	FWFCIntVector(const FWFCIntVector &t) {

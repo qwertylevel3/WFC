@@ -4,6 +4,7 @@
 
 #include "WFCUtil.h"
 #include <Kismet/GameplayStatics.h>
+#include "Macro.h"
 
 // Sets default values
 AWFCPlayZone::AWFCPlayZone()
@@ -27,7 +28,7 @@ bool AWFCPlayZone::CanOverlap(int x, int y, int z)
 	}
 }
 
-FWFCIntVector AWFCPlayZone::GetMovealbePos(const FWFCIntVector& TargetPos)
+FWFCIntVector AWFCPlayZone::GetMovealbePos(const FWFCIntVector& OriPos, const FWFCIntVector& TargetPos)
 {
 	//	std::string temp = std::to_string(PlayerPos.x) + std::to_string(PlayerPos.y) + std::to_string(PlayerPos.z);
 	//	if (GEngine) {
@@ -40,7 +41,7 @@ FWFCIntVector AWFCPlayZone::GetMovealbePos(const FWFCIntVector& TargetPos)
 	if (AllBlockGrid.count(HashCode) > 0 && !AllBlockGrid[HashCode]->CanOverlap())
 	{
 		//被阻挡
-		return FWFCIntVector(-1, -1, -1);
+		return OriPos;
 	}
 	else
 	{
@@ -62,46 +63,40 @@ FWFCIntVector AWFCPlayZone::GetMovealbePos(const FWFCIntVector& TargetPos)
 				else if (!AllBlockGrid[TempHashCode]->CanStep())
 				{
 					//下方的block不能立足
-					return FWFCIntVector(-1, -1, -1);
+					return OriPos;
 				}
 			}
 		}
 	}
-	return FWFCIntVector(-1, -1, -1);
+	return OriPos;
 }
 
-//FWFCIntVector AWFCPlayZone::GetMovealbePosByPlayerOrientation(EWFCOrientation Ori)
-//{
-//	FWFCIntVector TargetPos = GirdPos;
-//
-//	switch (Ori)
-//	{
-//	case EWFCOrientation::E_UP:
-//		TargetPos.x = TargetPos.x + 1;
-//		break;
-//	case EWFCOrientation::E_DOWN:
-//		TargetPos.x = TargetPos.x - 1;
-//		break;
-//	case EWFCOrientation::E_LEFT:
-//		TargetPos.y = TargetPos.y + 1;
-//		break;
-//	case EWFCOrientation::E_RIGHT:
-//		TargetPos.y = TargetPos.y - 1;
-//		break;
-//	default:
-//		break;
-//	}
-//
-//	return GetMovealbePos(TargetPos);
-//}
-
-void AWFCPlayZone::AddLightAtGridPos(AWFCLightBlock* Light, const FWFCIntVector& Pos)
+FWFCIntVector AWFCPlayZone::GetMovealbePosByDirection(const FWFCIntVector& OriPos, EWFCOrientation Direction)
 {
-	AllLight.push_back(Light);
+	FWFCIntVector TargetPos = OriPos;
+	switch (Direction)
+	{
+	case EWFCOrientation::E_UP:
+		TargetPos.x = TargetPos.x - 1;
+		break;
+	case EWFCOrientation::E_DOWN:
+		TargetPos.x = TargetPos.x + 1;
+		break;
+	case EWFCOrientation::E_LEFT:
+		TargetPos.y = TargetPos.y + 1;
+		break;
+	case EWFCOrientation::E_RIGHT:
+		TargetPos.y = TargetPos.y - 1;
+		break;
+	default:
+		break;
+	}
+	return GetMovealbePos(OriPos, TargetPos);
 }
 
 void AWFCPlayZone::NextTurn()
 {
+	Player->ActionTurn();
 	Player->EndTurn();
 	auto iter = PlayPawns.begin();
 	while (iter != PlayPawns.end())
@@ -111,36 +106,31 @@ void AWFCPlayZone::NextTurn()
 		(*iter)->EndTurn();
 		iter++;
 	}
+
+	CheckLight();
+
 	Player->StartTurn();
 }
 
-void AWFCPlayZone::StartTurn()
+void AWFCPlayZone::MoveBlock(AWFCBlock* Block, const FWFCIntVector& OriPos, const FWFCIntVector& TargetPos)
 {
-	auto iter = AllBlockGrid.begin();
-	while (iter != AllBlockGrid.end())
+	std::string OriHashCode = OriPos.GetHash();
+	std::string TargetHashCode = TargetPos.GetHash();
+	if (AllBlockGrid.count(OriHashCode) > 0)
 	{
-		iter->second->StartTurn();
-		iter++;
+		AllBlockGrid[OriHashCode]->RemoveBlock(Block);
+//		AddBlockAtPos(Block, TargetPos);
+		AddBlockAtPosWithoutWorldLocation(Block, TargetPos);
+		Block->MoveAnimation(OriPos, TargetPos);
 	}
 }
 
-void AWFCPlayZone::ActionTurn()
+void AWFCPlayZone::TryMoveBlockByDirection(AWFCBlock* Block, const FWFCIntVector& OriPos, EWFCOrientation Direction)
 {
-	auto iter = AllBlockGrid.begin();
-	while (iter != AllBlockGrid.end())
+	FWFCIntVector TargetPos = GetMovealbePosByDirection(OriPos, Direction);
+	if (TargetPos != OriPos)
 	{
-		iter->second->ActionTurn();
-		iter++;
-	}
-}
-
-void AWFCPlayZone::EndTurn()
-{
-	auto iter = AllBlockGrid.begin();
-	while (iter != AllBlockGrid.end())
-	{
-		iter->second->EndTurn();
-		iter++;
+		MoveBlock(Block, OriPos, TargetPos);
 	}
 }
 
@@ -156,16 +146,14 @@ void AWFCPlayZone::BeginPlay()
 
 	initGame();
 
-	Player->ActionTurn();
-
 	NextTurn();
 }
 
 void AWFCPlayZone::initGame()
 {
-	Player=GenerateBlockAtPos(PlayerClass, FWFCIntVector(0, 0, 0));
+	Player = GenerateBlockAtPos(PlayerClass, FWFCIntVector(0, 0, 0));
 
-	APlayerController* PlayerController= UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 	PlayerController->Possess(Player);
 }
 
@@ -218,13 +206,32 @@ AWFCBlock* AWFCPlayZone::GenerateBlockAtPos(UClass* Class, const FWFCIntVector& 
 
 bool AWFCPlayZone::IsInLight(const FWFCIntVector& Pos)
 {
-	//	return AllBlockGrid[Pos.GetHash()];
+	if (AllBlockGrid.count(Pos.GetHash()) > 0)
+	{
+		return AllBlockGrid[Pos.GetHash()]->LightValue < 0;
+	}
 	return true;
+}
+
+void AWFCPlayZone::CheckLight()
+{
+	auto iter = AllBlockGrid.begin();
+	while (iter != AllBlockGrid.end())
+	{
+		iter->second->CheckLight();
+		iter++;
+	}
+	RemoveOutBlocks();
 }
 
 void AWFCPlayZone::AddBlockAtPos(AWFCBlock* Block, const FWFCIntVector& Pos)
 {
 	Block->SetActorLocation(FVector(Pos.x*GridSize, Pos.y*GridSize, Pos.z*GridSize));
+	AddBlockAtPosWithoutWorldLocation(Block, Pos);
+}
+
+void AWFCPlayZone::AddBlockAtPosWithoutWorldLocation(AWFCBlock* Block, const FWFCIntVector& Pos)
+{
 	Block->GridPos = Pos;
 	Block->PlayZone = this;
 
@@ -259,22 +266,22 @@ void AWFCPlayZone::RemoveOutBlocks()
 		}
 	}
 
-	//移除待生成队列中block，防止生成无效的block
-	auto iter = NeedToBlockGridPosQueue.begin();
-	while (iter != NeedToBlockGridPosQueue.end())
-	{
-		FWFCIntVector BlockGridPos = iter->Pos;
-
-		if (!IsInLight(BlockGridPos))
-
-		{
-			iter = NeedToBlockGridPosQueue.erase(iter);
-		}
-		else
-		{
-			iter++;
-		}
-	}
+	//	//移除待生成队列中block，防止生成无效的block
+	//	auto iter = NeedToBlockGridPosQueue.begin();
+	//	while (iter != NeedToBlockGridPosQueue.end())
+	//	{
+	//		FWFCIntVector BlockGridPos = iter->Pos;
+	//
+	//		if (!IsInLight(BlockGridPos))
+	//
+	//		{
+	//			iter = NeedToBlockGridPosQueue.erase(iter);
+	//		}
+	//		else
+	//		{
+	//			iter++;
+	//		}
+	//	}
 }
 
 void AWFCPlayZone::LightGridPos(int LightValue, const FWFCIntVector& LightPos, const FWFCIntVector& Pos)

@@ -43,22 +43,27 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool CanOverlap(int x,int y,int z);
 
-	//获取可移动到的最终位置(可能落下,跳跃),-1-1-1表示不可到达
+	//获取可移动到的最终位置(可能落下,跳跃)
 	UFUNCTION(BlueprintCallable)
-	FWFCIntVector GetMovealbePos(const FWFCIntVector& TargetPos);
+	FWFCIntVector GetMovealbePos(const FWFCIntVector& OriPos,const FWFCIntVector& TargetPos);
 
-//	UFUNCTION(BlueprintCallable)
-//	FWFCIntVector GetMovealbePosByPlayerOrientation(EWFCOrientation Ori);
-
-
-	void AddLightAtGridPos(AWFCLightBlock* Light,const FWFCIntVector& Pos);
+	UFUNCTION(BlueprintCallable)
+	FWFCIntVector GetMovealbePosByDirection(const FWFCIntVector& OriPos,EWFCOrientation Direction);
 
 
+
+
+
+
+	UFUNCTION(BlueprintCallable)
 	void NextTurn();
 
-	void StartTurn();
-	void ActionTurn();
-	void EndTurn();
+	UFUNCTION(BlueprintCallable)
+	void MoveBlock(AWFCBlock* Block, const FWFCIntVector& OriPos, const FWFCIntVector& TargetPos);
+
+	UFUNCTION(BlueprintCallable)
+	void TryMoveBlockByDirection(AWFCBlock* Block, const FWFCIntVector& OriPos,EWFCOrientation Direction);
+
 
 	std::unordered_map<std::string, GridPtr>& GetAllBlockGridRef();
 protected:
@@ -90,7 +95,10 @@ public:
 	//某个位置是否被照亮
 	bool IsInLight(const FWFCIntVector& Pos);
 
+	void CheckLight();
+
 	void AddBlockAtPos(AWFCBlock* Block, const FWFCIntVector& Pos);
+	void AddBlockAtPosWithoutWorldLocation(AWFCBlock* Block, const FWFCIntVector& Pos);
 
 //	//更新区域
 //	void UpdateZone();

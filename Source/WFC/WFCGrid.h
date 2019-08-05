@@ -22,17 +22,16 @@ public:
 	WFCGrid(const FWFCIntVector& Pos);
 
 	void AddBlock(AWFCBlock* Block);
+	void RemoveBlock(AWFCBlock* Block);
 
 	std::string GetHash();
 
 	bool CanOverlap();
 	bool CanStep();
 
+	void CheckLight();
 	void ClearBlocks();
 
-	void StartTurn();
-	void ActionTurn();
-	void EndTurn();
 
 	FWFCIntVector GridPos;
 	std::list<AWFCBlock*>& GetAllBlockRef();
