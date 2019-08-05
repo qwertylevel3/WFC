@@ -10,6 +10,7 @@ WFCGrid::WFCGrid()
 WFCGrid::WFCGrid(const FWFCIntVector& Pos)
 	:GridPos(Pos)
 {
+	LightValue = 3;
 }
 
 WFCGrid::~WFCGrid()
@@ -64,4 +65,41 @@ void WFCGrid::ClearBlocks()
 		(*iter)->Destroy();
 		iter++;
 	}
+}
+
+void WFCGrid::StartTurn()
+{
+	auto iter = AllBlock.begin();
+	while (iter != AllBlock.end())
+	{
+		(*iter)->StartTurn();
+		iter++;
+	}
+}
+
+void WFCGrid::ActionTurn()
+{
+	auto iter = AllBlock.begin();
+	while (iter != AllBlock.end())
+	{
+		(*iter)->ActionTurn();
+		iter++;
+	}
+
+
+}
+
+void WFCGrid::EndTurn()
+{
+	auto iter = AllBlock.begin();
+	while (iter != AllBlock.end())
+	{
+		(*iter)->EndTurn();
+		iter++;
+	}
+}
+
+std::list<AWFCBlock*>& WFCGrid::GetAllBlockRef()
+{
+	return AllBlock;
 }

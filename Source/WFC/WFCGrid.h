@@ -30,7 +30,15 @@ public:
 
 	void ClearBlocks();
 
+	void StartTurn();
+	void ActionTurn();
+	void EndTurn();
+
 	FWFCIntVector GridPos;
+	std::list<AWFCBlock*>& GetAllBlockRef();
+
+
+	int LightValue;
 protected:
 	std::list<AWFCBlock*> AllBlock;
 };
