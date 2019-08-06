@@ -96,20 +96,23 @@ FWFCIntVector AWFCPlayZone::GetMovealbePosByDirection(const FWFCIntVector& OriPo
 
 void AWFCPlayZone::NextTurn()
 {
-	Player->ActionTurn();
-	Player->EndTurn();
-	auto iter = PlayPawns.begin();
-	while (iter != PlayPawns.end())
+	if (Player)
 	{
-		(*iter)->StartTurn();
-		(*iter)->ActionTurn();
-		(*iter)->EndTurn();
-		iter++;
+		Player->ActionTurn();
+		Player->EndTurn();
+		auto iter = PlayPawns.begin();
+		while (iter != PlayPawns.end())
+		{
+			(*iter)->StartTurn();
+			(*iter)->ActionTurn();
+			(*iter)->EndTurn();
+			iter++;
+		}
+
+		CheckLight();
+
+		Player->StartTurn();
 	}
-
-	CheckLight();
-
-	Player->StartTurn();
 }
 
 void AWFCPlayZone::MoveBlock(AWFCBlock* Block, const FWFCIntVector& OriPos, const FWFCIntVector& TargetPos)
@@ -119,7 +122,7 @@ void AWFCPlayZone::MoveBlock(AWFCBlock* Block, const FWFCIntVector& OriPos, cons
 	if (AllBlockGrid.count(OriHashCode) > 0)
 	{
 		AllBlockGrid[OriHashCode]->RemoveBlock(Block);
-//		AddBlockAtPos(Block, TargetPos);
+		//		AddBlockAtPos(Block, TargetPos);
 		AddBlockAtPosWithoutWorldLocation(Block, TargetPos);
 		Block->MoveAnimation(OriPos, TargetPos);
 	}
@@ -151,10 +154,19 @@ void AWFCPlayZone::BeginPlay()
 
 void AWFCPlayZone::initGame()
 {
-	Player = GenerateBlockAtPos(PlayerClass, FWFCIntVector(0, 0, 0));
+	NeedToGridPos PosInfo;
+	PosInfo.LightValue = 2;
+	PosInfo.Pos.x = 0;
+	PosInfo.Pos.y = 0;
+	PosInfo.Pos.z = 0;
+	GenerateGridAtPos(PosInfo);
+	Player = GenerateBlockAtPos(PlayerClass, PosInfo.Pos);
 
-	APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-	PlayerController->Possess(Player);
+	if (Player)
+	{
+		APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+		PlayerController->Possess(Player);
+	}
 }
 
 //void AWFCPlayZone::UpdateAllLight()
@@ -180,37 +192,47 @@ void AWFCPlayZone::Tick(float DeltaTime)
 
 	for (int i = 0; i < 5; i++)
 	{
-		GenerateBlockToScene();
+		GenerateGridToScene();
 	}
 }
 
 AWFCBlock* AWFCPlayZone::GenerateBlockAtPos(UClass* Class, const FWFCIntVector& Pos)
 {
+	if (AllBlockGrid.count(Pos.GetHash()) <= 0)
+	{
+		return nullptr;
+	}
+
 	UWorld* const World = GetWorld();
 	if (World != NULL)
 	{
 		FActorSpawnParameters ActorSpawnParams;
 		ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		AWFCBlock* block = World->SpawnActor<AWFCBlock>(Class, FVector(0, 0, 0), FRotator(0, 0, 0), ActorSpawnParams);
+		AWFCBlock* Block = World->SpawnActor<AWFCBlock>(Class, FVector(0, 0, 0), FRotator(0, 0, 0), ActorSpawnParams);
 
-		if (block)
+		if (Block)
 		{
-			AddBlockAtPos(block, Pos);
+			Block->SetActorLocation(FVector(Pos.x*GridSize, Pos.y*GridSize, Pos.z*GridSize));
+			Block->GridPos = Pos;
+			Block->PlayZone = this;
 
-			return block;
+			std::string PosHash = Pos.GetHash();
+			AllBlockGrid[PosHash]->AddBlock(Block);
+
+			return Block;
 		}
 	}
 	return nullptr;
 }
 
-bool AWFCPlayZone::IsInLight(const FWFCIntVector& Pos)
+void AWFCPlayZone::GenerateGridAtPos(NeedToGridPos PosInfo)
 {
-	if (AllBlockGrid.count(Pos.GetHash()) > 0)
+	std::string PosHash = PosInfo.Pos.GetHash();
+	if (AllBlockGrid.count(PosHash) <= 0)
 	{
-		return AllBlockGrid[Pos.GetHash()]->LightValue < 0;
+		AllBlockGrid[PosHash] = GridPtr(new WFCGrid(PosInfo.Pos, PosInfo.LightValue));
 	}
-	return true;
 }
 
 void AWFCPlayZone::CheckLight()
@@ -255,7 +277,7 @@ void AWFCPlayZone::RemoveOutBlocks()
 	{
 		//对于每个grid，检测是否点亮
 		FWFCIntVector BlockGridPos = BlocksIter->second->GridPos;
-		if (!IsInLight(BlockGridPos))
+		if (BlocksIter->second->LightValue < 0)
 		{
 			BlocksIter->second->ClearBlocks();
 			BlocksIter = AllBlockGrid.erase(BlocksIter);
@@ -304,10 +326,10 @@ void AWFCPlayZone::LightGridPos(int LightValue, const FWFCIntVector& LightPos, c
 		return;
 	}
 
-	//搜索是否已经加入了待生成block队列
+	//搜索是否已经加入了待生成Grid队列
 	bool SearchFlag = false;
-	auto iter = NeedToBlockGridPosQueue.begin();
-	while (iter != NeedToBlockGridPosQueue.end())
+	auto iter = NeedToGridPosQueue.begin();
+	while (iter != NeedToGridPosQueue.end())
 	{
 		FWFCIntVector BlockGridPos = iter->Pos;
 
@@ -322,45 +344,53 @@ void AWFCPlayZone::LightGridPos(int LightValue, const FWFCIntVector& LightPos, c
 	//如果不存在则新增与待生成grid队列中
 	if (!SearchFlag)
 	{
-		NeedToBlockPos NewPos;
+		NeedToGridPos NewPos;
 		NewPos.Pos = Pos;
 		NewPos.LightValueD = double(LightValue) - Pos.GetDistanceD(LightPos);
 		NewPos.LightValue = TargetLightValue;
-		NeedToBlockGridPosQueue.push_back(NewPos);
+		NeedToGridPosQueue.push_back(NewPos);
 	}
 }
 
-void AWFCPlayZone::GenerateBlockToScene()
+void AWFCPlayZone::GenerateGridToScene()
 {
-	if (NeedToBlockGridPosQueue.empty())
+	if (NeedToGridPosQueue.empty())
 	{
 		return;
 	}
 
-	//	if (GEngine) {
-	//		GEngine->AddOnScreenDebugMessage(-1, 20, FColor::Red, std::to_string(NeedToBlockGridPos.size()).c_str());
-	//	}
+	if (GEngine) {
+		GEngine->AddOnScreenDebugMessage(-1, 20, FColor::Red, std::to_string(NeedToGridPosQueue.size()).c_str());
+	}
 
-	auto minIter = NeedToBlockGridPosQueue.begin();
-	auto iter = NeedToBlockGridPosQueue.begin();
-	while (iter != NeedToBlockGridPosQueue.end())
+	auto maxIter = NeedToGridPosQueue.begin();
+	auto iter = NeedToGridPosQueue.begin();
+	while (iter != NeedToGridPosQueue.end())
 	{
-		if (iter != minIter && iter->LightValueD < minIter->LightValueD)
+		if (iter != maxIter && iter->LightValueD > maxIter->LightValueD)
 		{
-			minIter = iter;
+			maxIter = iter;
 		}
 		iter++;
 	}
 
-	int rand = WFCUtil::getRandom(0, 1);
-	if (rand == 0)
+	std::string PosHash = maxIter->Pos.GetHash();
+	if (AllBlockGrid.count(PosHash) <= 0)
 	{
-		GenerateBlockAtPos(BlockClass1, minIter->Pos);
+		AllBlockGrid[PosHash] = GridPtr(new WFCGrid(maxIter->Pos, maxIter->LightValue));
 	}
-	else
+	if (maxIter->Pos.z < 0)
 	{
-		GenerateBlockAtPos(BlockClass2, minIter->Pos);
+		int rand = WFCUtil::getRandom(0, 1);
+		if (rand == 0)
+		{
+			GenerateBlockAtPos(BlockClass1, maxIter->Pos);
+		}
+		else
+		{
+			GenerateBlockAtPos(BlockClass2, maxIter->Pos);
+		}
 	}
 
-	NeedToBlockGridPosQueue.erase(minIter);
+	NeedToGridPosQueue.erase(maxIter);
 }

@@ -19,7 +19,7 @@ class WFC_API WFCGrid
 public:
 	WFCGrid();
 	~WFCGrid();
-	WFCGrid(const FWFCIntVector& Pos);
+	WFCGrid(const FWFCIntVector& Pos,int InitLightValue=0);
 
 	void AddBlock(AWFCBlock* Block);
 	void RemoveBlock(AWFCBlock* Block);

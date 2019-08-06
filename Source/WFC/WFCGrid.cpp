@@ -7,10 +7,10 @@ WFCGrid::WFCGrid()
 {
 }
 
-WFCGrid::WFCGrid(const FWFCIntVector& Pos)
-	:GridPos(Pos)
+WFCGrid::WFCGrid(const FWFCIntVector& Pos, int InitLightValue/*=0*/)
+	:GridPos(Pos),LightValue(InitLightValue)
 {
-	LightValue = 0;
+
 }
 
 WFCGrid::~WFCGrid()

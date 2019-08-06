@@ -34,9 +34,11 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Light")
 	int LightValue;
 
 	//可观测半径
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Light")
 	int LightSize;
 public:	
 	virtual void Tick(float DeltaTime) override;

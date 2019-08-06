@@ -11,7 +11,7 @@
 
 #include "WFCPlayZone.generated.h"
 
-struct NeedToBlockPos 
+struct NeedToGridPos 
 {
 	//位置
 	FWFCIntVector Pos;
@@ -74,7 +74,7 @@ protected:
 	//场景中block区域
 	std::unordered_map<std::string, GridPtr> AllBlockGrid;
 	//待生成block队列
-	std::list<NeedToBlockPos> NeedToBlockGridPosQueue;
+	std::list<NeedToGridPos> NeedToGridPosQueue;
 	std::list<AWFCLightBlock*> AllLight;
 
 
@@ -92,8 +92,7 @@ public:
 
 	AWFCBlock* GenerateBlockAtPos(UClass* Class,const FWFCIntVector& Pos);
 
-	//某个位置是否被照亮
-	bool IsInLight(const FWFCIntVector& Pos);
+	void GenerateGridAtPos(NeedToGridPos PosInfo);
 
 	void CheckLight();
 
@@ -109,5 +108,5 @@ public:
 	void LightGridPos(int LightValue,const FWFCIntVector& LightPos, const FWFCIntVector& Pos);
 
 	//真正的构造
-	void GenerateBlockToScene();
+	void GenerateGridToScene();
 };

@@ -153,8 +153,7 @@ void AWFCLightBlock::UpdateLightedBlocksGridPos()
 			{
 				FWFCIntVector Pos(GridPos.x + i, GridPos.y + j, GridPos.z + k);
 
-				if (GridPos.GetDistance(Pos) <= LightSize
-					&& k < 0)
+				if (GridPos.GetDistance(Pos) <= LightSize)
 				{
 					LightedBlocksGridPos.Emplace(Pos);
 				}
